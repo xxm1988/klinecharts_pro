@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KLineChart Pro 示例</title>
+  <link rel="stylesheet" href="./klinecharts-pro.css" />
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+      background: #0f172a;
+      color: #f1f5f9;
+      overflow: hidden;
+    }
+    .layout {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(15, 23, 42, 0.85);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+      backdrop-filter: blur(10px);
+    }
+    header h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    header span {
+      font-size: 14px;
+      color: rgba(226, 232, 240, 0.7);
+    }
+    #chart-container {
+      flex: 1;
+    }
+    footer {
+      padding: 12px 24px;
+      font-size: 13px;
+      color: rgba(226, 232, 240, 0.5);
+      background: rgba(15, 23, 42, 0.85);
+      border-top: 1px solid rgba(148, 163, 184, 0.15);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    footer a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <header>
+      <h1>KLineChart Pro Demo</h1>
+      <span>使用本地构建的 JS 与 CSS</span>
+    </header>
+    <div id="chart-container"></div>
+    <footer>
+      <span>数据源：示例随机数据</span>
+      <a href="https://github.com/klinecharts/pro" target="_blank" rel="noreferrer">项目仓库</a>
+    </footer>
+  </div>
+
+  <script src="./lodash.min.js"></script>
+  <script src="./klinecharts.min.js"></script>
+  <script src="./klinecharts-pro.umd.js"></script>
+  <script src="./kline-data.js"></script>
+  <script>
+    const { KLineChartPro } = window.klinechartspro
+    const staticCandles = window.demoCandles
+
+    const demoDatafeed = {
+      realtimeTimerId: null,
+      async searchSymbols() {
+        return []
+      },
+      async getHistoryKLineData(symbol, period, from, to) {
+        console.log('[Datafeed] getHistoryKLineData params:', { symbol, period, from, to })
+        if (typeof from === 'number' && typeof to === 'number' && !Number.isNaN(from) && !Number.isNaN(to)) {
+          const filtered = staticCandles.filter(candle => candle.timestamp >= from && candle.timestamp <= to)
+          if (filtered.length > 0) {
+            return filtered
+          }
+        }
+        return staticCandles
+      },
+      subscribe(symbol, period, callback) {
+        console.log('[Datafeed] subscribe params:', { symbol, period })
+        if (this.realtimeTimerId) {
+          clearInterval(this.realtimeTimerId)
+        }
+        const lastCandle = staticCandles[staticCandles.length - 1]
+        this.realtimeTimerId = setInterval(() => {
+          callback(lastCandle)
+        }, 3000)
+      },
+      unsubscribe(symbol, period) {
+        console.log('[Datafeed] unsubscribe params:', { symbol, period })
+        if (this.realtimeTimerId) {
+          clearInterval(this.realtimeTimerId)
+          this.realtimeTimerId = null
+        }
+      }
+    }
+
+    const chart = new KLineChartPro({
+      container: 'chart-container',
+      symbol: {
+        exchange: 'DemoEX',
+        market: 'stocks',
+        name: 'Demo Stock Inc.',
+        shortName: 'DEMO',
+        ticker: 'DEMO',
+        priceCurrency: 'usd',
+        type: 'stock',
+      },
+      period: { multiplier: 1, timespan: 'hour', text: '1H' },
+      datafeed: demoDatafeed,
+      theme: 'dark',
+    })
+
+    chart.setStyles({
+      grid: {
+        horizontal: { color: '#1e293b' },
+        vertical: { color: '#1e293b' },
+      },
+    })
+
+    window.addEventListener('beforeunload', () => {
+      if (chart.unsubscribe) {
+        chart.unsubscribe()
+      }
+    })
+  </script>
+</body>
+</html>

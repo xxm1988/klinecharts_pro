@@ -20,7 +20,7 @@ export default defineConfig({
       lang: 'zh-CN',
       link: '/',
       themeConfig: {
-        nav: [{ text: '预览', link: 'https://preview.klinecharts.com' }],
+        nav: [{ text: '预览', link: '/@fs/d:/github开源项目/klinecharts_pro/src/KLineChartPro.tsx' }],
         sidebar: [
           {
             text: '介绍',
