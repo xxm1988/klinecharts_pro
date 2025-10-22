@@ -35,6 +35,7 @@ import { SymbolInfo, Period, ChartProOptions, ChartPro } from './types'
 
 export interface ChartProComponentProps extends Required<Omit<ChartProOptions, 'container'>> {
   ref: (chart: ChartPro) => void
+  onChartReady?: (chart: Chart) => void
 }
 
 interface PrevSymbolPeriod {
@@ -42,7 +43,7 @@ interface PrevSymbolPeriod {
   period: Period
 }
 
-function createIndicator (widget: Nullable<Chart>, indicatorName: string, isStack?: boolean, paneOptions?: PaneOptions): Nullable<string> {
+function createIndicator(widget: Nullable<Chart>, indicatorName: string, isStack?: boolean, paneOptions?: PaneOptions): Nullable<string> {
   if (indicatorName === 'VOL') {
     paneOptions = { gap: { bottom: 2 }, ...paneOptions }
   }
@@ -101,6 +102,9 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     visible: false, indicatorName: '', paneId: '', calcParams: [] as Array<any>
   })
 
+  // 添加一个变量来存储图表实例
+  let chartInstance: Chart | null = null
+
   props.ref({
     setTheme,
     getTheme: () => theme(),
@@ -113,7 +117,8 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
     setSymbol,
     getSymbol: () => symbol(),
     setPeriod,
-    getPeriod: () => period()
+    getPeriod: () => period(),
+    getChartInstance: () => chartInstance
   })
 
   const documentResize = () => {
@@ -210,6 +215,14 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
         }
       }
     })
+
+    // 保存图表实例
+    chartInstance = widget
+
+    // 通知图表已准备就绪
+    if (widget && props.onChartReady) {
+      props.onChartReady(widget)
+    }
 
     if (widget) {
       const watermarkContainer = widget.getDom('candle_pane', DomPosition.Main)
@@ -440,13 +453,13 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
 
   return (
     <>
-      <i class="icon-close klinecharts-pro-load-icon"/>
+      <i class="icon-close klinecharts-pro-load-icon" />
       <Show when={symbolSearchModalVisible()}>
         <SymbolSearchModal
           locale={props.locale}
           datafeed={props.datafeed}
           onSymbolSelected={symbol => { setSymbol(symbol) }}
-          onClose={() => { setSymbolSearchModalVisible(false) }}/>
+          onClose={() => { setSymbolSearchModalVisible(false) }} />
       </Show>
       <Show when={indicatorModalVisible()}>
         <IndicatorModal
@@ -481,7 +494,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
               }
             }
             setSubIndicators(newSubIndicators)
-          }}/>
+          }} />
       </Show>
       <Show when={timezoneModalVisible()}>
         <TimezoneModal
@@ -521,7 +534,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           locale={props.locale}
           params={indicatorSettingModalParams()}
           onClose={() => { setIndicatorSettingModalParams({ visible: false, indicatorName: '', paneId: '', calcParams: [] }) }}
-          onConfirm={(params)=> {
+          onConfirm={(params) => {
             const modalParams = indicatorSettingModalParams()
             widget?.overrideIndicator({ name: modalParams.indicatorName, calcParams: params }, modalParams.paneId)
           }}
@@ -537,7 +550,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
           try {
             await startTransition(() => setDrawingBarVisible(!drawingBarVisible()))
             widget?.resize()
-          } catch (e) {}    
+          } catch (e) { }
         }}
         onSymbolClick={() => { setSymbolSearchModalVisible(!symbolSearchModalVisible()) }}
         onPeriodChange={setPeriod}
@@ -554,7 +567,7 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
       <div
         class="klinecharts-pro-content">
         <Show when={loadingVisible()}>
-          <Loading/>
+          <Loading />
         </Show>
         <Show when={drawingBarVisible()}>
           <DrawingBar
@@ -563,12 +576,12 @@ const ChartProComponent: Component<ChartProComponentProps> = props => {
             onModeChange={mode => { widget?.overrideOverlay({ mode: mode as OverlayMode }) }}
             onLockChange={lock => { widget?.overrideOverlay({ lock }) }}
             onVisibleChange={visible => { widget?.overrideOverlay({ visible }) }}
-            onRemoveClick={(groupId) => { widget?.removeOverlay({ groupId }) }}/>
+            onRemoveClick={(groupId) => { widget?.removeOverlay({ groupId }) }} />
         </Show>
         <div
           ref={widgetRef}
           class='klinecharts-pro-widget'
-          data-drawing-bar-visible={drawingBarVisible()}/>
+          data-drawing-bar-visible={drawingBarVisible()} />
       </div>
     </>
   )

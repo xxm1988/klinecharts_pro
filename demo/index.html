@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -7,7 +8,8 @@
   <title>KLineChart Pro 示例</title>
   <link rel="stylesheet" href="./klinecharts-pro.css" />
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       height: 100%;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
@@ -15,11 +17,13 @@
       color: #f1f5f9;
       overflow: hidden;
     }
+
     .layout {
       height: 100%;
       display: flex;
       flex-direction: column;
     }
+
     header {
       padding: 16px 24px;
       display: flex;
@@ -29,19 +33,23 @@
       border-bottom: 1px solid rgba(148, 163, 184, 0.15);
       backdrop-filter: blur(10px);
     }
+
     header h1 {
       margin: 0;
       font-size: 18px;
       font-weight: 600;
       letter-spacing: 0.02em;
     }
+
     header span {
       font-size: 14px;
       color: rgba(226, 232, 240, 0.7);
     }
+
     #chart-container {
       flex: 1;
     }
+
     footer {
       padding: 12px 24px;
       font-size: 13px;
@@ -52,21 +60,49 @@
       justify-content: space-between;
       align-items: center;
     }
+
     footer a {
       color: #38bdf8;
       text-decoration: none;
     }
+
     footer a:hover {
       text-decoration: underline;
     }
+
+    .controls {
+      padding: 10px 24px;
+      background: rgba(15, 23, 42, 0.85);
+      border-top: 1px solid rgba(148, 163, 184, 0.15);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+
+    button:hover {
+      background: #2563eb;
+    }
   </style>
 </head>
+
 <body>
   <div class="layout">
     <header>
       <h1>KLineChart Pro Demo</h1>
       <span>使用本地构建的 JS 与 CSS</span>
     </header>
+    <div class="controls">
+      <button id="addMarkers">添加标记</button>
+      <button id="removeMarkers">删除所有标记</button>
+    </div>
     <div id="chart-container"></div>
     <footer>
       <span>数据源：示例随机数据</span>
@@ -183,6 +219,61 @@
       },
     })
 
+    // 添加标记功能
+    document.getElementById('addMarkers').addEventListener('click', () => {
+      const chartInstance = chart.getChartInstance();
+      if (chartInstance) {
+        // 获取当前数据
+        const data = chartInstance.getDataList();
+        if (data && data.length > 0) {
+          // 查找指定日期的数据点
+          const targetDates = [
+            new Date('2025-08-01').getTime(),
+            new Date('2025-06-05').getTime()
+          ];
+
+          targetDates.forEach(date => {
+            const candle = data.find(c => {
+              const candleDate = new Date(c.timestamp);
+              return candleDate.getFullYear() === new Date(date).getFullYear() &&
+                candleDate.getMonth() === new Date(date).getMonth() &&
+                candleDate.getDate() === new Date(date).getDate();
+            });
+
+            if (candle) {
+              // 添加星号标记
+              chartInstance.createOverlay({
+                name: 'simpleAnnotation',
+                extendData: '★',
+                points: [
+                  {
+                    timestamp: candle.timestamp,
+                    value: candle.high
+                  }
+                ],
+                styles: {
+                  text: {
+                    color: '#FFD700',
+                    size: 24,
+                    family: 'Arial',
+                    weight: 'bold'
+                  }
+                }
+              });
+            }
+          });
+        }
+      }
+    });
+
+    // 删除所有标记功能
+    document.getElementById('removeMarkers').addEventListener('click', () => {
+      const chartInstance = chart.getChartInstance();
+      if (chartInstance) {
+        chartInstance.removeOverlay();
+      }
+    });
+
     window.addEventListener('beforeunload', () => {
       if (chart.unsubscribe) {
         chart.unsubscribe()
@@ -190,5 +281,5 @@
     })
   </script>
 </body>
-</html>
 
+</html>
