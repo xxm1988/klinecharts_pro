@@ -82,33 +82,77 @@
     const { KLineChartPro } = window.klinechartspro
     const staticCandles = window.demoCandles
 
+    const normalizeTimestamp = (value) => {
+      const numericValue = Number(value)
+      if (!Number.isFinite(numericValue)) {
+        return null
+      }
+      if (Math.abs(numericValue) < 1e12) {
+        return numericValue * 1000
+      }
+      return numericValue
+    }
+
+    const formatTimestamp = (value) => {
+      const normalized = normalizeTimestamp(value)
+      if (normalized !== null) {
+        return new Date(normalized).toISOString().slice(0, 10)
+      }
+      return value
+    }
+
     const demoDatafeed = {
       realtimeTimerId: null,
       async searchSymbols() {
         return []
       },
       async getHistoryKLineData(symbol, period, from, to) {
-        console.log('[Datafeed] getHistoryKLineData params:', { symbol, period, from, to })
-        if (typeof from === 'number' && typeof to === 'number' && !Number.isNaN(from) && !Number.isNaN(to)) {
-          const filtered = staticCandles.filter(candle => candle.timestamp >= from && candle.timestamp <= to)
-          if (filtered.length > 0) {
-            return filtered
-          }
+        const normalizedFrom = normalizeTimestamp(from)
+        const normalizedTo = normalizeTimestamp(to)
+
+        console.log('[Datafeed] getHistoryKLineData params:', {
+          symbol,
+          period,
+          from,
+          fromFormatted: formatTimestamp(from),
+          to,
+          toFormatted: formatTimestamp(to),
+          normalizedFrom,
+          normalizedTo,
+        })
+
+        if (normalizedFrom !== null && normalizedTo !== null) {
+          const rangeStart = Math.min(normalizedFrom, normalizedTo)
+          const rangeEnd = Math.max(normalizedFrom, normalizedTo)
+          const filtered = staticCandles.filter(candle => candle.timestamp >= rangeStart && candle.timestamp <= rangeEnd)
+          console.log('[Datafeed] filtered candles:', filtered.length)
+          return filtered
         }
+
+        console.log('[Datafeed] fallback candles:', staticCandles.length)
         return staticCandles
       },
       subscribe(symbol, period, callback) {
-        console.log('[Datafeed] subscribe params:', { symbol, period })
+        console.log('[Datafeed] subscribe params:', {
+          symbol,
+          period,
+        })
         if (this.realtimeTimerId) {
           clearInterval(this.realtimeTimerId)
         }
-        const lastCandle = staticCandles[staticCandles.length - 1]
+        let lastIndex = 0
         this.realtimeTimerId = setInterval(() => {
-          callback(lastCandle)
+          if (lastIndex < staticCandles.length) {
+            callback(staticCandles[lastIndex])
+            lastIndex += 1
+          }
         }, 3000)
       },
       unsubscribe(symbol, period) {
-        console.log('[Datafeed] unsubscribe params:', { symbol, period })
+        console.log('[Datafeed] unsubscribe params:', {
+          symbol,
+          period,
+        })
         if (this.realtimeTimerId) {
           clearInterval(this.realtimeTimerId)
           this.realtimeTimerId = null
@@ -127,7 +171,7 @@
         priceCurrency: 'usd',
         type: 'stock',
       },
-      period: { multiplier: 1, timespan: 'hour', text: '1H' },
+      period: { multiplier: 1, timespan: 'day', text: '1D' },
       datafeed: demoDatafeed,
       theme: 'dark',
     })
